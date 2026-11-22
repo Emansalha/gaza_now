@@ -206,8 +206,8 @@ def main(out_path):
     # Fill in missing photos from each article page (Gaza stories first).
     missing = [a for a in unique if not a["imageUrl"]]
     missing.sort(key=lambda a: not a["isGaza"])
-    with cf.ThreadPoolExecutor(10) as ex:
-        for a, img in zip(missing[:120], ex.map(lambda a: og_image(a["link"]), missing[:120])):
+    with cf.ThreadPoolExecutor(16) as ex:
+        for a, img in zip(missing, ex.map(lambda a: og_image(a["link"]), missing)):
             a["imageUrl"] = img
 
     with_img = sum(1 for a in unique if a["imageUrl"])
