@@ -1,0 +1,47 @@
+name: gaza_now
+description: Gaza Now - Arabic-first news app for the Gaza Strip.
+publish_to: "none"
+version: 1.1.0+2
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  audioplayers: ^6.1.0
+  shared_preferences: ^2.3.2
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/sounds/
+
+# App icon:  dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/app_icon.png
+  remove_alpha_ios: true
+  adaptive_icon_background: "#073B49"
+  adaptive_icon_foreground: assets/images/app_icon_foreground.png
+
+# Native launch screen shown before Flutter starts:  dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#073B49"
+  image: assets/images/app_icon_foreground.png
+  android_12:
+    color: "#073B49"
+    image: assets/images/app_icon_foreground.png
