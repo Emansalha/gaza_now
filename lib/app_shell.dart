@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'channel/channel_models.dart';
 import 'channel/channel_page.dart';
 import 'channel/channel_repository.dart';
+import 'news/news_models.dart';
 import 'news/news_repository.dart';
 import 'pages/home_page.dart';
 import 'pages/list_pages.dart';
