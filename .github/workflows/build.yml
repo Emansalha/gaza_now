@@ -27,6 +27,7 @@ jobs:
           if [ ! -d android ]; then
             flutter create . --platforms=android,ios --org ps.gazanow --project-name gaza_now
           fi
+          rm -f test/widget_test.dart   # default counter test from flutter create
 
       - name: Install packages
         run: flutter pub get

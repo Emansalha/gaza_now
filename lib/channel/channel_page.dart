@@ -290,10 +290,12 @@ class _ComposerState extends State<_Composer> {
       createdAt: DateTime.now(),
     ));
     _text.clear();
-    if (mounted) setState(() {
-      sending = false;
-      isUrgent = false;
-    });
+    if (mounted) {
+      setState(() {
+        sending = false;
+        isUrgent = false;
+      });
+    }
   }
 
   @override
