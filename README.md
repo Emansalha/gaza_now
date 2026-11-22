@@ -56,7 +56,17 @@ flutter run
 
 مجلدات Android و iOS موجودة وجاهزة: اسم التطبيق، صلاحية الإنترنت، الإعلانات، التوقيع. يتطلب Flutter 3.32 أو أحدث.
 
-### تحميل APK / AAB جاهز
+### ⬇️ تحميل مباشر
+**https://github.com/Emansalha/gaza_now/releases/latest/download/gaza-now.apk**
+
+### 🔌 API الأخبار الخاص بالتطبيق
+كل 30 دقيقة يجمع GitHub Actions الأخبار من المصادر السبعة ويجلب صورة كل خبر، ثم ينشرها كـ JSON على:
+`https://raw.githubusercontent.com/Emansalha/gaza_now/data/news.json`
+
+التطبيق يقرأ منه أولاً (طلب واحد سريع، وصور لكل الأخبار)، وإن تعذّر يقرأ موجزات RSS مباشرة.
+الكود: `tools/build_feed.py`، والجدولة في `.github/workflows/news-api.yml`.
+
+### تحميل APK / AAB من Actions
 كل رفع على `main` يبني التطبيق تلقائياً. افتح **Actions** ← آخر تشغيل ← **Artifacts**:
 - `gaza-now-apk` للتثبيت المباشر على الهاتف
 - `gaza-now-playstore-aab` للرفع على Google Play

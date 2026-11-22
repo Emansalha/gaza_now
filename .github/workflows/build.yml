@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -71,3 +74,17 @@ jobs:
         with:
           name: gaza-now-playstore-aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Publish GitHub release (direct APK download link)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          cp build/app/outputs/flutter-apk/app-release.apk gaza-now.apk
+          cp build/app/outputs/bundle/release/app-release.aab gaza-now.aab
+          if ! gh release view "v$V" >/dev/null 2>&1; then
+            gh release create "v$V" --title "غزة الآن $V" --latest \
+              --notes "تطبيق غزة الآن $V. ثبّت gaza-now.apk على هاتف أندرويد، أو ارفع gaza-now.aab على Google Play."
+          fi
+          gh release upload "v$V" gaza-now.apk gaza-now.aab --clobber

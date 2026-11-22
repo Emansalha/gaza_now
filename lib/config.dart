@@ -38,6 +38,12 @@ class AppConfig {
   static const adsEnabled = bool.fromEnvironment('ADS_ENABLED', defaultValue: true);
 
   // ---------------------------------------------------------------- News API
+  /// The app's own news API: a JSON file rebuilt every 30 minutes by the
+  /// "News API" GitHub workflow from the trusted outlets (with photos).
+  /// If it can't be reached the app reads the outlets' RSS feeds directly.
+  static const newsApiUrl = String.fromEnvironment('NEWS_API_URL',
+      defaultValue: 'https://raw.githubusercontent.com/Emansalha/gaza_now/data/news.json');
+
   /// Free key from https://newsdata.io (Arabic news with photos).
   /// Leave empty to use only the RSS sources.
   static const newsDataApiKey = String.fromEnvironment('NEWSDATA_API_KEY');

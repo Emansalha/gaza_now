@@ -54,6 +54,15 @@ class NewsRepository extends ChangeNotifier {
     loading = true;
     notifyListeners();
     final failed = <String>{};
+
+    // 1) Our own API: one fast request, photos already resolved.
+    final api = await _fetchOwnApi();
+    if (api != null && api.articles.isNotEmpty) {
+      _apply(api.articles, api.failed);
+      return;
+    }
+
+    // 2) Fallback: read every outlet's RSS directly.
     final results = await Future.wait(newsSources.map((s) async {
       try {
         final r = await _client.get(Uri.parse(s.feedUrl), headers: _headers).timeout(const Duration(seconds: 15));
@@ -75,6 +84,10 @@ class NewsRepository extends ChangeNotifier {
         failed.add(apiSource.id);
       }
     }
+    _apply(fresh, failed);
+  }
+
+  void _apply(List<Article> fresh, Set<String> failed) {
     if (fresh.isNotEmpty) {
       final byLink = <String, Article>{for (final a in fresh) a.link: a};
       // Keep older cached items from sources that failed this time.
@@ -89,6 +102,31 @@ class NewsRepository extends ChangeNotifier {
     failedSources = failed;
     loading = false;
     notifyListeners();
+  }
+
+  Future<({List<Article> articles, Set<String> failed})?> _fetchOwnApi() async {
+    if (AppConfig.newsApiUrl.isEmpty) return null;
+    try {
+      final r = await _client
+          .get(Uri.parse(AppConfig.newsApiUrl), headers: _headers)
+          .timeout(const Duration(seconds: 12));
+      if (r.statusCode != 200) return null;
+      final body = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
+      final generated = DateTime.tryParse(body['generated'] as String? ?? '');
+      // Ignore a stale API (e.g. the workflow stopped) and use RSS instead.
+      if (generated == null || DateTime.now().toUtc().difference(generated) > const Duration(hours: 6)) return null;
+      final list = (body['articles'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(Article.fromJson)
+          .toList();
+      final failed = <String>{
+        for (final s in (body['sources'] as List? ?? const []).whereType<Map<String, dynamic>>())
+          if (s['ok'] != true) s['id'] as String,
+      };
+      return (articles: list, failed: failed);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// News through the NewsData.io REST API (Arabic, with photos).
@@ -172,7 +210,8 @@ class NewsRepository extends ChangeNotifier {
   // ---------- persistence ----------
   void _restore() {
     enabledSources = (prefs.getStringList(_kEnabled) ?? availableSources.map((s) => s.id).toList()).toSet();
-    if (AppConfig.newsDataApiKey.isNotEmpty) enabledSources.add(apiSource.id);
+    // Stories the server pulled from NewsData.io arrive with sourceId "api".
+    if (prefs.getStringList(_kEnabled) == null) enabledSources.add(apiSource.id);
     _items = _decodeList(prefs.getString(_kCache));
     for (final a in _decodeList(prefs.getString(_kSaved))) {
       _saved[a.link] = a;
