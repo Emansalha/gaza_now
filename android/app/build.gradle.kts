@@ -55,6 +55,13 @@ android {
         }
     }
 
+    // Release lint crashes inside a plugin (webview_flutter_android) with current AGP;
+    // the app is still analysed by `flutter analyze` in CI.
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {
