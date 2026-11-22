@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../ads/ads.dart';
 import '../news/news_models.dart';
 import '../news/news_repository.dart';
 import '../pages/article_page.dart';
 import '../theme.dart';
 
 void openArticle(BuildContext context, Article a, {String? heroTag}) {
+  // Ad 3: occasional full-screen ad (frequency-capped in AdService).
+  AdService.instance.onArticleOpened();
   Navigator.of(context).push(PageRouteBuilder(
     transitionDuration: const Duration(milliseconds: 450),
     reverseTransitionDuration: const Duration(milliseconds: 350),
@@ -139,8 +142,10 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
 
 class SourceBadge extends StatelessWidget {
   final NewsSource source;
+  final String? name;
   final bool light;
-  const SourceBadge(this.source, {super.key, this.light = false});
+  const SourceBadge(this.source, {super.key, this.light = false, this.name});
+  SourceBadge.of(Article a, {Key? key, bool light = false}) : this(a.source, key: key, light: light, name: a.publisher);
   @override
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
@@ -148,12 +153,12 @@ class SourceBadge extends StatelessWidget {
           height: 18,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: source.color, shape: BoxShape.circle),
-          child: Text(source.name.characters.first,
+          child: Text((name ?? source.name).characters.first,
               style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, height: 1.1)),
         ),
         const SizedBox(width: 6),
         Flexible(
-          child: Text(source.name,
+          child: Text(name ?? source.name,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
@@ -230,7 +235,7 @@ class FeaturedCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(14, 0, 4, 4),
             child: Row(children: [
-              Flexible(child: SourceBadge(article.source)),
+              Flexible(child: SourceBadge.of(article)),
               const SizedBox(width: 8),
               Text('• ${timeAgo(article.published)}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
               const Spacer(),
@@ -274,7 +279,7 @@ class CompactCard extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, height: 1.4, color: context.titleColor)),
                   const Spacer(),
                   Row(children: [
-                    Flexible(child: SourceBadge(article.source)),
+                    Flexible(child: SourceBadge.of(article)),
                     const SizedBox(width: 6),
                     Text(timeAgo(article.published), style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   ]),
@@ -482,7 +487,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                             color: Colors.black.withValues(alpha: .35),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: SourceBadge(a.source, light: true),
+                          child: SourceBadge.of(a, light: true),
                         ),
                         const SizedBox(height: 8),
                         Text(a.title,

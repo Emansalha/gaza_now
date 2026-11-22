@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ads/ads.dart';
 import 'app_shell.dart';
 import 'channel/channel_repository.dart';
 import 'news/news_repository.dart';
@@ -17,6 +18,8 @@ Future<void> main() async {
   // Start downloading news while the splash animation plays.
   news.refresh();
   runApp(GazaNowApp(darkMode: darkMode, channel: LocalChannelRepository(prefs), news: news));
+  // Ads start after the first frame so they never delay the app opening.
+  AdService.instance.init();
 }
 
 class GazaNowApp extends StatelessWidget {

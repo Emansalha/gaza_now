@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config.dart';
 import 'news_models.dart';
 import 'rss_parser.dart';
 
@@ -67,6 +68,13 @@ class NewsRepository extends ChangeNotifier {
     }));
 
     final fresh = results.expand((e) => e).toList();
+    if (AppConfig.newsDataApiKey.isNotEmpty) {
+      try {
+        fresh.addAll(await _fetchNewsData());
+      } catch (_) {
+        failed.add(apiSource.id);
+      }
+    }
     if (fresh.isNotEmpty) {
       final byLink = <String, Article>{for (final a in fresh) a.link: a};
       // Keep older cached items from sources that failed this time.
@@ -82,6 +90,40 @@ class NewsRepository extends ChangeNotifier {
     loading = false;
     notifyListeners();
   }
+
+  /// News through the NewsData.io REST API (Arabic, with photos).
+  Future<List<Article>> _fetchNewsData() async {
+    final uri = Uri.https('newsdata.io', '/api/1/latest', {
+      'apikey': AppConfig.newsDataApiKey,
+      'language': 'ar',
+      'q': 'غزة OR فلسطين OR رفح OR خانيونس',
+      'removeduplicate': '1',
+    });
+    final r = await _client.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+    if (r.statusCode != 200) throw Exception('HTTP ${r.statusCode}');
+    final body = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
+    final results = (body['results'] as List?) ?? const [];
+    return [
+      for (final raw in results.whereType<Map<String, dynamic>>())
+        if ((raw['title'] as String?)?.isNotEmpty == true && (raw['link'] as String?)?.startsWith('http') == true)
+          Article(
+            link: raw['link'] as String,
+            title: cleanText(raw['title'] as String),
+            summary: cleanText((raw['description'] as String?) ?? ''),
+            sourceId: apiSource.id,
+            publisher: raw['source_name'] as String? ?? raw['source_id'] as String?,
+            imageUrl: (raw['image_url'] as String?)?.startsWith('http') == true ? raw['image_url'] as String : null,
+            published: DateTime.tryParse('${raw['pubDate'] ?? ''}Z'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+            category: (raw['category'] is List && (raw['category'] as List).isNotEmpty)
+                ? '${(raw['category'] as List).first}'
+                : null,
+          ),
+    ];
+  }
+
+  /// Sources the reader can choose from (the API appears only when a key is set).
+  static List<NewsSource> get availableSources =>
+      [...newsSources, if (AppConfig.newsDataApiKey.isNotEmpty) apiSource];
 
   /// Finds the article's main photo (og:image) when the feed has none.
   Future<String?> resolveImage(Article a) {
@@ -129,7 +171,8 @@ class NewsRepository extends ChangeNotifier {
 
   // ---------- persistence ----------
   void _restore() {
-    enabledSources = (prefs.getStringList(_kEnabled) ?? newsSources.map((s) => s.id).toList()).toSet();
+    enabledSources = (prefs.getStringList(_kEnabled) ?? availableSources.map((s) => s.id).toList()).toSet();
+    if (AppConfig.newsDataApiKey.isNotEmpty) enabledSources.add(apiSource.id);
     _items = _decodeList(prefs.getString(_kCache));
     for (final a in _decodeList(prefs.getString(_kSaved))) {
       _saved[a.link] = a;

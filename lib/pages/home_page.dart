@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../ads/ads.dart';
 import '../news/news_models.dart';
 import '../news/news_repository.dart';
 import '../theme.dart';
@@ -87,7 +88,7 @@ class _HomePageState extends State<HomePage> {
                 height: 40,
                 child: ListView(scrollDirection: Axis.horizontal, children: [
                   _SourceChip(label: 'كل المصادر', selected: sourceFilter == null, onTap: () => setState(() => sourceFilter = null)),
-                  for (final s in newsSources.where((s) => repo.enabledSources.contains(s.id)))
+                  for (final s in NewsRepository.availableSources.where((s) => repo.enabledSources.contains(s.id)))
                     _SourceChip(
                       label: s.name,
                       color: s.color,
@@ -136,8 +137,15 @@ class _HomePageState extends State<HomePage> {
                     )
                   : SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, i) => i % 5 == 0 ? FeaturedCard(article: feed[i]) : CompactCard(article: feed[i]),
-                        childCount: feed.length,
+                        (_, i) {
+                          // Ad 1 sits after the 4th story.
+                          const adAt = 4;
+                          if (feed.length > adAt && i == adAt) return BannerAdBox.home();
+                          final idx = feed.length > adAt && i > adAt ? i - 1 : i;
+                          final a = feed[idx];
+                          return idx % 5 == 0 ? FeaturedCard(article: a) : CompactCard(article: a);
+                        },
+                        childCount: feed.length + (feed.length > 4 ? 1 : 0),
                       ),
                     ),
         ),

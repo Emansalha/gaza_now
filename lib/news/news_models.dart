@@ -74,7 +74,19 @@ const newsSources = <NewsSource>[
   ),
 ];
 
-NewsSource sourceById(String id) =>
+/// Pseudo-source for stories that come through the NewsData.io API.
+const apiSource = NewsSource(
+  id: 'api',
+  name: 'وكالات (NewsData)',
+  feedUrl: '',
+  homepage: 'https://newsdata.io',
+  description: 'أخبار عربية من مئات المواقع الإخبارية عبر واجهة NewsData.io البرمجية، مع اسم الناشر الأصلي.',
+  color: Color(0xFF6A4FB3),
+);
+
+NewsSource sourceById(String id) => id == 'api'
+    ? apiSource
+    :
     newsSources.firstWhere((s) => s.id == id, orElse: () => newsSources.first);
 
 /// Words that mark a story as about Gaza / Palestine.
@@ -95,6 +107,9 @@ const governorateKeywords = <String, List<String>>{
 class Article {
   final String link, title, summary, sourceId;
   final String? imageUrl, category;
+
+  /// Original publisher name for API stories (e.g. "العربي الجديد").
+  final String? publisher;
   final DateTime published;
 
   const Article({
@@ -105,9 +120,11 @@ class Article {
     required this.published,
     this.imageUrl,
     this.category,
+    this.publisher,
   });
 
   String get id => link;
+  String get sourceName => publisher ?? source.name;
   NewsSource get source => sourceById(sourceId);
   String get _text => '$title $summary';
 
@@ -125,6 +142,7 @@ class Article {
         published: published,
         imageUrl: imageUrl ?? this.imageUrl,
         category: category,
+        publisher: publisher,
       );
 
   Map<String, dynamic> toJson() => {
@@ -135,6 +153,7 @@ class Article {
         'published': published.toIso8601String(),
         'imageUrl': imageUrl,
         'category': category,
+        'publisher': publisher,
       };
 
   factory Article.fromJson(Map<String, dynamic> j) => Article(
@@ -145,6 +164,7 @@ class Article {
         published: DateTime.tryParse(j['published'] as String? ?? '') ?? DateTime.now(),
         imageUrl: j['imageUrl'] as String?,
         category: j['category'] as String?,
+        publisher: j['publisher'] as String?,
       );
 }
 

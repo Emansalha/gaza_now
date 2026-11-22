@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK & App Bundle
 
 on:
   push:
@@ -9,6 +9,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Optional repository secrets (Settings → Secrets → Actions). Builds work without them
+      # using Google's test ad IDs and debug signing.
+      ORG_GRADLE_PROJECT_ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
+      DART_DEFINES: >-
+        --dart-define=NEWSDATA_API_KEY=${{ secrets.NEWSDATA_API_KEY }}
+        ${{ secrets.ADMOB_BANNER_ANDROID && format('--dart-define=ADMOB_BANNER_ANDROID={0}', secrets.ADMOB_BANNER_ANDROID) || '' }}
+        ${{ secrets.ADMOB_ARTICLE_ANDROID && format('--dart-define=ADMOB_ARTICLE_ANDROID={0}', secrets.ADMOB_ARTICLE_ANDROID) || '' }}
+        ${{ secrets.ADMOB_INTERSTITIAL_ANDROID && format('--dart-define=ADMOB_INTERSTITIAL_ANDROID={0}', secrets.ADMOB_INTERSTITIAL_ANDROID) || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,27 +31,24 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android/iOS platform folders (if missing)
-        run: |
-          if [ ! -d android ]; then
-            flutter create . --platforms=android,ios --org ps.gazanow --project-name gaza_now
-          fi
-          rm -f test/widget_test.dart   # default counter test from flutter create
-
       - name: Install packages
         run: flutter pub get
 
-      - name: App icon and native splash
+      - name: Release signing (only if keystore secrets exist)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          dart run flutter_launcher_icons
-          dart run flutter_native_splash:create
-
-      - name: Android app name and internet permission
-        run: |
-          M=android/app/src/main/AndroidManifest.xml
-          sed -i 's/android:label="[^"]*"/android:label="غزة الآن"/' $M
-          grep -q 'android.permission.INTERNET' $M || sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
-          grep -n "INTERNET\|android:label" $M
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+            printf "storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n" \
+              "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
+            echo "Release keystore configured"
+          else
+            echo "No keystore secrets: using debug signing"
+          fi
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -51,9 +57,17 @@ jobs:
         run: flutter test
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release $DART_DEFINES
+
+      - name: Build Play Store bundle (AAB)
+        run: flutter build appbundle --release $DART_DEFINES
 
       - uses: actions/upload-artifact@v4
         with:
           name: gaza-now-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gaza-now-playstore-aab
+          path: build/app/outputs/bundle/release/app-release.aab

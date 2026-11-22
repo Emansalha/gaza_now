@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../ads/ads.dart';
 import '../news/news_models.dart';
 import '../news/news_repository.dart';
 import '../theme.dart';
@@ -75,7 +76,7 @@ class ArticlePage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Flexible(child: SourceBadge(a.source)),
+                Flexible(child: SourceBadge.of(a)),
                 const SizedBox(width: 10),
                 const Icon(Icons.schedule, size: 14, color: Colors.grey),
                 const SizedBox(width: 3),
@@ -98,7 +99,7 @@ class ArticlePage extends StatelessWidget {
               ],
               const Divider(height: 30),
               Text(
-                a.summary.isEmpty ? 'لم ينشر المصدر ملخصاً لهذا الخبر. اقرأ التفاصيل كاملة على موقع ${a.source.name}.' : a.summary,
+                a.summary.isEmpty ? 'لم ينشر المصدر ملخصاً لهذا الخبر. اقرأ التفاصيل كاملة على موقع ${a.sourceName}.' : a.summary,
                 style: const TextStyle(fontSize: 17, height: 1.9),
               ),
               const SizedBox(height: 22),
@@ -112,7 +113,7 @@ class ArticlePage extends StatelessWidget {
                   ),
                   onPressed: () => openExternal(context, a.link),
                   icon: const Icon(Icons.open_in_new),
-                  label: Text('اقرأ الخبر كاملاً على ${a.source.name}',
+                  label: Text('اقرأ الخبر كاملاً على ${a.sourceName}',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
               ),
@@ -136,9 +137,11 @@ class ArticlePage extends StatelessWidget {
               ]),
               const SizedBox(height: 18),
               InfoNote(
-                text: 'هذا الخبر منشور من ${a.source.name} كما ورد في موجزها الرسمي، وحقوقه محفوظة لها. '
+                text: 'هذا الخبر منشور من ${a.sourceName} كما ورد في موجزها الرسمي، وحقوقه محفوظة لها. '
                     'غزة الآن يجمع الأخبار من مصادر معروفة ويعرض دائماً اسم المصدر ورابط الخبر الأصلي.',
               ),
+              // Ad 2: under the article.
+              Center(child: BannerAdBox.article()),
               if (related.isNotEmpty) ...[
                 const SizedBox(height: 26),
                 const SectionTitle('أخبار ذات صلة'),

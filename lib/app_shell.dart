@@ -10,6 +10,7 @@ import 'news/news_repository.dart';
 import 'pages/home_page.dart';
 import 'pages/list_pages.dart';
 import 'pages/map_page.dart';
+import 'pages/privacy_page.dart';
 import 'theme.dart';
 import 'widgets/news_widgets.dart';
 
@@ -187,11 +188,13 @@ class MorePage extends StatelessWidget {
           _Tile(Icons.refresh, 'تحديث الأخبار الآن', repo.lastUpdated == null ? '' : 'آخر تحديث ${timeAgo(repo.lastUpdated!)}',
               repo.refresh),
           const Divider(height: 1),
-          _Tile(Icons.info_outline, 'حول التطبيق', 'الإصدار 1.2.0', () {
+          _Tile(Icons.privacy_tip_outlined, 'سياسة الخصوصية', 'كيف نتعامل مع بياناتك والإعلانات', () => push(const PrivacyPage())),
+          const Divider(height: 1),
+          _Tile(Icons.info_outline, 'حول التطبيق', 'الإصدار 1.3.0', () {
             showAboutDialog(
               context: context,
               applicationName: 'غزة الآن',
-              applicationVersion: '1.2.0',
+              applicationVersion: '1.3.0',
               applicationIcon: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.asset('assets/images/logo.png', width: 44, height: 44),

@@ -161,7 +161,7 @@ class UpdatesPage extends StatelessWidget {
                       title: Text(a.title, style: const TextStyle(fontWeight: FontWeight.w800, height: 1.4)),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: Text('${a.source.name} • ${timeAgo(a.published)}'),
+                        child: Text('${a.sourceName} • ${timeAgo(a.published)}'),
                       ),
                     ),
                   ),
@@ -206,7 +206,7 @@ class SourcesPage extends StatelessWidget {
           ]),
         ),
         const SizedBox(height: 16),
-        for (final s in newsSources)
+        for (final s in NewsRepository.availableSources)
           Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: Padding(

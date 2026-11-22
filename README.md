@@ -48,18 +48,28 @@
 ## 🚀 التشغيل
 
 ```bash
-flutter create . --platforms=android,ios --org ps.gazanow   # مرة واحدة لتوليد مجلدات المنصات
-# ثم أضف <uses-permission android:name="android.permission.INTERNET"/> إلى android/app/src/main/AndroidManifest.xml
+git clone https://github.com/Emansalha/gaza_now
+cd gaza_now
 flutter pub get
-dart run flutter_launcher_icons          # أيقونة التطبيق
-dart run flutter_native_splash:create    # شاشة الإقلاع الأصلية
 flutter run
 ```
 
-يتطلب Flutter 3.32 أو أحدث.
+مجلدات Android و iOS موجودة وجاهزة: اسم التطبيق، صلاحية الإنترنت، الإعلانات، التوقيع. يتطلب Flutter 3.32 أو أحدث.
 
-### تحميل APK جاهز
-كل رفع على فرع `main` يبني APK تلقائياً عبر GitHub Actions. افتح تبويب **Actions** ← آخر تشغيل ← **gaza-now-apk**.
+### تحميل APK / AAB جاهز
+كل رفع على `main` يبني التطبيق تلقائياً. افتح **Actions** ← آخر تشغيل ← **Artifacts**:
+- `gaza-now-apk` للتثبيت المباشر على الهاتف
+- `gaza-now-playstore-aab` للرفع على Google Play
+
+### 💰 الإعلانات (3 مواضع)
+1. بانر داخل الرئيسية بعد الخبر الرابع
+2. مستطيل أسفل نص كل خبر
+3. إعلان ملء الشاشة: مرة كل 5 أخبار وبحد أقصى مرة كل 3 دقائق
+
+تعمل حالياً بمعرّفات Google **التجريبية**. لتفعيل الأرباح راجع **[LAUNCH.md](LAUNCH.md)**.
+
+### 🔌 الأخبار عبر API
+إضافة مفتاح NewsData.io (`NEWSDATA_API_KEY`) تضيف أخبار مئات المواقع العربية بالصور. التفاصيل في [LAUNCH.md](LAUNCH.md).
 
 ## 🗂 هيكل المشروع
 
@@ -73,7 +83,9 @@ lib/
     news_models.dart         المصادر ونموذج الخبر وكلمات تصنيف غزة والمحافظات
     rss_parser.dart          قارئ RSS / RDF / Atom
     news_repository.dart     التحميل والتخزين والصور والمحفوظات
-  pages/                     الرئيسية، الخبر، الخريطة، البحث، المحفوظات، المصادر، البث
+  pages/                     الرئيسية، الخبر، الخريطة، البحث، المحفوظات، المصادر، البث، الخصوصية
+  ads/ads.dart               الإعلانات وطلب الموافقة
+  config.dart                معرّفات الإعلانات ومفتاح API في مكان واحد
   widgets/news_widgets.dart  البطاقات، الشريط العاجل، عرض الصور
   channel/
     channel_models.dart      نماذج المنشور والصحفي
