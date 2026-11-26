@@ -99,14 +99,19 @@ class _Placeholder extends StatelessWidget {
             end: Alignment.bottomLeft,
           ),
         ),
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.newspaper_rounded, color: Colors.white70, size: 30),
-            const SizedBox(height: 4),
-            Text(source.name,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
-          ]),
+        // Scales down to fit any thumbnail size and any text size.
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.newspaper_rounded, color: Colors.white70, size: 30),
+              const SizedBox(height: 4),
+              Text(source.name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
+            ]),
+          ),
         ),
       );
 }

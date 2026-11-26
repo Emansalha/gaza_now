@@ -93,7 +93,10 @@ class _AppShellState extends State<AppShell> {
           : AppBar(
               centerTitle: false,
               titleSpacing: 16,
-              title: Row(mainAxisSize: MainAxisSize.min, children: [
+              title: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(9),
                   child: Image.asset('assets/images/logo.png', width: 34, height: 34),
@@ -104,6 +107,7 @@ class _AppShellState extends State<AppShell> {
                   Text('GAZA NOW', style: TextStyle(fontSize: 9, letterSpacing: 3, color: Colors.grey, height: 1.2)),
                 ]),
               ]),
+              ),
               actions: [
                 IconButton(onPressed: () => push(const SearchPage()), icon: const Icon(Icons.search), tooltip: 'بحث'),
                 IconButton(

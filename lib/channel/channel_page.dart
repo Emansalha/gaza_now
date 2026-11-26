@@ -537,7 +537,7 @@ class _GoLiveSheetState extends State<GoLiveSheet> {
               const Row(children: [
                 Icon(Icons.sensors, color: urgent),
                 SizedBox(width: 8),
-                Text('بدء بث مباشر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                Expanded(child: Text('بدء بث مباشر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800))),
               ]),
               const SizedBox(height: 12),
               const Text(

@@ -144,7 +144,7 @@ void main() {
 
     await tester.pumpWidget(h.wrap(ChannelPage(repo: h.channel, onOpenLive: () {})));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.textContaining('مباشر الآن'), findsOneWidget);
+    expect(find.textContaining('مباشر الآن: '), findsOneWidget);
     expect(find.text('إنهاء البث'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
