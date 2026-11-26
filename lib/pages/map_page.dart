@@ -146,7 +146,11 @@ class _Governorate extends StatelessWidget {
             child: SizedBox(
               width: width,
               height: 62,
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text(name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11.5)),
@@ -160,6 +164,8 @@ class _Governorate extends StatelessWidget {
                   child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
               ]),
+                ),
+              ),
             ),
           ),
         ),
