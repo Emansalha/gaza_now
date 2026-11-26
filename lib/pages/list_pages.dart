@@ -195,7 +195,10 @@ class SourcesPage extends StatelessWidget {
             Row(children: [
               Icon(Icons.verified, color: Colors.white),
               SizedBox(width: 8),
-              Text('كيف نضمن موثوقية الأخبار؟', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+              Expanded(
+                child: Text('كيف نضمن موثوقية الأخبار؟',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+              ),
             ]),
             SizedBox(height: 10),
             Text(
@@ -287,7 +290,7 @@ class LivePage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(22),
                 onTap: () => openExternal(context, s.$3),
                 child: Container(
-                  height: 150,
+                  constraints: const BoxConstraints(minHeight: 150),
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),

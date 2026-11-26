@@ -6,6 +6,9 @@ import 'package:gaza_now/app_shell.dart';
 import 'package:gaza_now/channel/channel_models.dart';
 import 'package:gaza_now/channel/channel_page.dart';
 import 'package:gaza_now/channel/channel_repository.dart';
+import 'package:gaza_now/channel/journalist_signup_page.dart';
+import 'package:gaza_now/pages/map_page.dart';
+import 'package:gaza_now/pages/privacy_page.dart';
 import 'package:gaza_now/news/news_models.dart';
 import 'package:gaza_now/news/news_repository.dart';
 import 'package:gaza_now/pages/article_page.dart';
@@ -167,11 +170,16 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'بث مباشر من رفح');
     await tester.enterText(find.byType(TextFormField).at(1), 'not a link');
+    await tester.ensureVisible(find.text('انشر البث للمشتركين'));
+    await tester.pump();
     await tester.tap(find.text('انشر البث للمشتركين'));
+    await tester.pump();
     await tester.pump();
     expect(find.text('أدخل رابطاً كاملاً يبدأ بـ https://'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).at(1), 'https://www.youtube.com/live/xyz');
+    await tester.ensureVisible(find.text('انشر البث للمشتركين'));
+    await tester.pump();
     await tester.tap(find.text('انشر البث للمشتركين'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(h.channel.activeLives.single.text, 'بث مباشر من رفح');
@@ -194,10 +202,24 @@ void main() {
   testWidgets('Search, saved and updates pages render', (tester) async {
     final h = await setUpHarness(tester);
     h.news.toggleSaved(sampleArticles(3).first);
-    for (final page in [const SearchPage(), const Scaffold(body: SavedPage()), const UpdatesPage(), const SourcesPage()]) {
+    for (final page in [
+      const SearchPage(),
+      const Scaffold(body: SavedPage()),
+      const UpdatesPage(),
+      const SourcesPage(),
+      const LivePage(),
+      const Scaffold(body: MapPage()),
+      const PrivacyPage(),
+      JournalistSignupPage(repo: h.channel),
+    ]) {
       await tester.pumpWidget(h.wrap(page));
       await tester.pump(const Duration(milliseconds: 200));
       expect(tester.takeException(), isNull, reason: '$page');
+      final lists = find.byType(Scrollable);
+      if (lists.evaluate().isNotEmpty) {
+        await scrollToEnd(tester, lists.first);
+        expect(tester.takeException(), isNull, reason: '$page (scrolled)');
+      }
     }
     await tearDownApp(tester);
   });
