@@ -8,12 +8,15 @@ import '../config.dart';
 import '../theme.dart';
 
 bool get _adsSupported =>
-    AppConfig.adsEnabled && !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+    AdService.enabled && AppConfig.adsEnabled && !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
 /// Starts AdMob after asking for consent where the law requires it (EU/UK).
 class AdService {
   AdService._();
   static final instance = AdService._();
+
+  /// Switched off in widget tests (no ads SDK there).
+  static bool enabled = true;
 
   bool _ready = false;
   int _opens = 0;

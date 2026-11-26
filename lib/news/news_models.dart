@@ -14,7 +14,7 @@ class NewsSource {
   });
 }
 
-/// Feeds verified to return Arabic RSS (checked Nov 2026).
+/// Feeds verified to return Arabic RSS (checked 26 Nov 2026).
 const newsSources = <NewsSource>[
   NewsSource(
     id: 'aljazeera',
@@ -23,6 +23,22 @@ const newsSources = <NewsSource>[
     homepage: 'https://www.aljazeera.net',
     description: 'شبكة إخبارية عربية دولية مقرها الدوحة، لها مراسلون داخل قطاع غزة.',
     color: Color(0xFFC8962B),
+  ),
+  NewsSource(
+    id: 'arab48',
+    name: 'عرب 48',
+    feedUrl: 'https://www.arab48.com/rss',
+    homepage: 'https://www.arab48.com',
+    description: 'موقع إخباري فلسطيني يغطي الشأن الفلسطيني وغزة يومياً.',
+    color: Color(0xFF1E7B4F),
+  ),
+  NewsSource(
+    id: 'alquds',
+    name: 'القدس العربي',
+    feedUrl: 'https://www.alquds.co.uk/feed/',
+    homepage: 'https://www.alquds.co.uk',
+    description: 'صحيفة عربية يومية مستقلة مقرها لندن، تغطية واسعة لفلسطين.',
+    color: Color(0xFF8E2C2C),
   ),
   NewsSource(
     id: 'un',
@@ -63,6 +79,14 @@ const newsSources = <NewsSource>[
     homepage: 'https://www.skynewsarabia.com',
     description: 'قناة إخبارية عربية مقرها أبوظبي.',
     color: Color(0xFF2B8C8C),
+  ),
+  NewsSource(
+    id: 'cnn',
+    name: 'CNN بالعربية',
+    feedUrl: 'https://arabic.cnn.com/api/v1/rss/middle_east/rss.xml',
+    homepage: 'https://arabic.cnn.com',
+    description: 'النسخة العربية من شبكة CNN، قسم الشرق الأوسط.',
+    color: Color(0xFFCC0000),
   ),
   NewsSource(
     id: 'dw',

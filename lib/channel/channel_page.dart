@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../pages/article_page.dart' show openExternal;
 import '../theme.dart';
 import 'channel_models.dart';
 import 'channel_repository.dart';
@@ -62,6 +63,7 @@ class ChannelPage extends StatelessWidget {
             ],
           ),
           body: Column(children: [
+            for (final live in repo.activeLives) _LiveBanner(post: live),
             Expanded(
               child: posts.isEmpty
                   ? const Center(child: Text('لا توجد منشورات بعد', style: TextStyle(color: Colors.grey)))
@@ -69,11 +71,15 @@ class ChannelPage extends StatelessWidget {
                       reverse: true, // newest at the bottom, like Telegram
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                       itemCount: posts.length,
-                      itemBuilder: (_, i) => _PostBubble(
-                        post: posts[i],
-                        canDelete: journalist != null && !posts[i].sample && posts[i].authorName == journalist.name,
-                        onDelete: () => repo.deletePost(posts[i].id),
-                      ),
+                      itemBuilder: (_, i) {
+                        final mine = journalist != null && !posts[i].sample && posts[i].authorName == journalist.name;
+                        return _PostBubble(
+                          post: posts[i],
+                          canDelete: mine,
+                          onDelete: () => repo.deletePost(posts[i].id),
+                          onEndLive: mine && posts[i].isLive ? () => repo.endLive(posts[i].id) : null,
+                        );
+                      },
                     ),
             ),
             _BottomBar(repo: repo, onSignup: () => _openSignup(context)),
@@ -99,11 +105,115 @@ class ChannelPage extends StatelessWidget {
 
 String _formatCount(int n) => n >= 1000 ? '${(n / 1000).toStringAsFixed(1)} ألف' : '$n';
 
+/// Red strip pinned at the top of the channel while a journalist is live.
+class _LiveBanner extends StatelessWidget {
+  final ChannelPost post;
+  const _LiveBanner({required this.post});
+  @override
+  Widget build(BuildContext context) => Material(
+        color: urgent,
+        child: InkWell(
+          onTap: () => openExternal(context, post.liveUrl!),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(children: [
+              const _Pulse(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'مباشر الآن: ${post.authorName} • ${post.text}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                child: const Text('شاهد', style: TextStyle(color: urgent, fontWeight: FontWeight.w800)),
+              ),
+            ]),
+          ),
+        ),
+      );
+}
+
+class _Pulse extends StatefulWidget {
+  const _Pulse();
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
+  late final AnimationController c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
+  @override
+  void dispose() {
+    c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: Tween(begin: .3, end: 1.0).animate(c),
+        child: Container(width: 10, height: 10, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+      );
+}
+
+/// The live card inside a post bubble.
+class _LiveCard extends StatelessWidget {
+  final ChannelPost post;
+  final VoidCallback? onEndLive;
+  const _LiveCard({required this.post, this.onEndLive});
+  @override
+  Widget build(BuildContext context) {
+    final live = post.isLive;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: live ? urgent : Colors.grey.shade600,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(live ? Icons.sensors : Icons.sensors_off, color: Colors.white),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              live ? 'بث مباشر الآن على ${livePlatformName(post.liveUrl!)}' : 'انتهى البث المباشر',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: live ? urgent : Colors.black87),
+            onPressed: () => openExternal(context, post.liveUrl!),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: Text(live ? 'شاهد البث' : 'شاهد التسجيل'),
+          ),
+          if (onEndLive != null)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white)),
+              onPressed: onEndLive,
+              icon: const Icon(Icons.stop_circle_outlined),
+              label: const Text('إنهاء البث'),
+            ),
+        ]),
+      ]),
+    );
+  }
+}
+
 class _PostBubble extends StatelessWidget {
   final ChannelPost post;
   final bool canDelete;
   final VoidCallback onDelete;
-  const _PostBubble({required this.post, required this.canDelete, required this.onDelete});
+  final VoidCallback? onEndLive;
+  const _PostBubble({required this.post, required this.canDelete, required this.onDelete, this.onEndLive});
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +258,8 @@ class _PostBubble extends StatelessWidget {
                 if (post.sample) _Tag('مثال', Colors.grey.withValues(alpha: .18), Colors.grey),
               ]),
               const SizedBox(height: 6),
-              Text(post.text, style: const TextStyle(fontSize: 15, height: 1.6)),
+              Text(post.text, style: const TextStyle(fontSize: 16, height: 1.6)),
+              if (post.liveUrl != null) _LiveCard(post: post, onEndLive: onEndLive),
               const SizedBox(height: 6),
               Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.visibility_outlined, size: 13, color: Colors.grey),
@@ -264,7 +375,7 @@ class _Composer extends StatefulWidget {
 
 class _ComposerState extends State<_Composer> {
   final _text = TextEditingController();
-  String region = channelRegions.first;
+  late String region = channelRegions.contains(widget.journalist.region) ? widget.journalist.region : channelRegions.first;
   bool isUrgent = false;
   bool sending = false;
 
@@ -346,7 +457,18 @@ class _ComposerState extends State<_Composer> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
+        IconButton(
+          tooltip: 'بث مباشر',
+          color: urgent,
+          onPressed: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            builder: (_) => GoLiveSheet(repo: widget.repo, journalist: widget.journalist),
+          ),
+          icon: const Icon(Icons.videocam_rounded),
+        ),
         IconButton.filled(
           style: IconButton.styleFrom(backgroundColor: isUrgent ? urgent : teal),
           onPressed: sending ? null : _send,
@@ -356,4 +478,118 @@ class _ComposerState extends State<_Composer> {
       ]),
     ]);
   }
+}
+
+/// Journalist starts a live: a title, the region, and the link of the stream
+/// they opened on YouTube / Facebook / TikTok / Instagram.
+class GoLiveSheet extends StatefulWidget {
+  final ChannelRepository repo;
+  final Journalist journalist;
+  const GoLiveSheet({super.key, required this.repo, required this.journalist});
+  @override
+  State<GoLiveSheet> createState() => _GoLiveSheetState();
+}
+
+class _GoLiveSheetState extends State<GoLiveSheet> {
+  final _form = GlobalKey<FormState>();
+  final _title = TextEditingController();
+  final _link = TextEditingController();
+  late String region = widget.journalist.region;
+
+  static const apps = [
+    ('YouTube', 'https://www.youtube.com/', Color(0xFFFF0000)),
+    ('Facebook', 'https://www.facebook.com/live/producer', Color(0xFF1877F2)),
+    ('TikTok', 'https://www.tiktok.com/', Color(0xFF111111)),
+    ('Instagram', 'https://www.instagram.com/', Color(0xFFC13584)),
+  ];
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _link.dispose();
+    super.dispose();
+  }
+
+  Future<void> _publish() async {
+    if (!_form.currentState!.validate()) return;
+    final j = widget.journalist;
+    await widget.repo.publish(ChannelPost(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      authorName: j.name,
+      outlet: j.outlet,
+      text: _title.text.trim(),
+      region: region,
+      urgent: true,
+      verifiedAuthor: j.status == JournalistStatus.verified,
+      createdAt: DateTime.now(),
+      liveUrl: _link.text.trim(),
+    ));
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(18, 0, 18, MediaQuery.viewInsetsOf(context).bottom + 18),
+        child: Form(
+          key: _form,
+          child: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+              const Row(children: [
+                Icon(Icons.sensors, color: urgent),
+                SizedBox(width: 8),
+                Text('بدء بث مباشر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              ]),
+              const SizedBox(height: 12),
+              const Text(
+                '1) ابدأ البث من تطبيق YouTube أو Facebook أو TikTok أو Instagram.\n'
+                '2) انسخ رابط البث والصقه هنا.\n'
+                '3) سيظهر البث فوراً للمشتركين بشريط أحمر «مباشر الآن».',
+                style: TextStyle(height: 1.7),
+              ),
+              const SizedBox(height: 10),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final a in apps)
+                  ActionChip(
+                    avatar: CircleAvatar(backgroundColor: a.$3, radius: 7),
+                    label: Text('افتح ${a.$1}'),
+                    onPressed: () => openExternal(context, a.$2),
+                  ),
+              ]),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _title,
+                validator: (v) => (v == null || v.trim().length < 4) ? 'اكتب عنواناً للبث' : null,
+                decoration: const InputDecoration(labelText: 'عنوان البث', hintText: 'مثال: تغطية مباشرة من خانيونس', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _link,
+                keyboardType: TextInputType.url,
+                textDirection: TextDirection.ltr,
+                validator: (v) => validateLiveUrl(v ?? ''),
+                decoration: const InputDecoration(
+                  labelText: 'رابط البث',
+                  hintText: 'https://youtube.com/live/...',
+                  prefixIcon: Icon(Icons.link),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: channelRegions.contains(region) ? region : channelRegions.first,
+                items: [for (final r in channelRegions) DropdownMenuItem(value: r, child: Text(r))],
+                onChanged: (v) => setState(() => region = v ?? region),
+                decoration: const InputDecoration(labelText: 'المنطقة', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: urgent, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: _publish,
+                icon: const Icon(Icons.sensors),
+                label: const Text('انشر البث للمشتركين', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              ),
+            ]),
+          ),
+        ),
+      );
 }

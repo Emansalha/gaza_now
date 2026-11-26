@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../channel/channel_models.dart' show ChannelPost, livePlatformName;
+import '../channel/channel_repository.dart';
 import '../news/news_models.dart';
 import '../news/news_repository.dart';
 import '../theme.dart';
@@ -236,7 +238,8 @@ class SourcesPage extends StatelessWidget {
 }
 
 class LivePage extends StatelessWidget {
-  const LivePage({super.key});
+  final ChannelRepository? channel;
+  const LivePage({super.key, this.channel});
 
   static const streams = [
     ('الجزيرة مباشر', 'بث مباشر لقناة الجزيرة الإخبارية', 'https://www.aljazeera.net/video/live', Color(0xFFC8962B)),
@@ -248,6 +251,35 @@ class LivePage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('البث المباشر')),
         body: ListView(padding: const EdgeInsets.all(16), children: [
+          if (channel != null)
+            StreamBuilder<List<ChannelPost>>(
+              stream: channel!.watchPosts(),
+              initialData: channel!.posts,
+              builder: (context, _) {
+                final lives = channel!.activeLives;
+                if (lives.isEmpty) return const SizedBox.shrink();
+                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const SectionTitle('بث المراسلين الآن'),
+                  const SizedBox(height: 10),
+                  for (final p in lives)
+                    Card(
+                      color: urgent,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        onTap: () => openExternal(context, p.liveUrl!),
+                        leading: const Icon(Icons.sensors, color: Colors.white, size: 30),
+                        title: Text(p.text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                        subtitle: Text('${p.authorName} • ${p.region} • ${livePlatformName(p.liveUrl!)}',
+                            style: const TextStyle(color: Colors.white70)),
+                        trailing: const Icon(Icons.play_circle_fill, color: Colors.white, size: 34),
+                      ),
+                    ),
+                  const SizedBox(height: 14),
+                  const SectionTitle('قنوات إخبارية'),
+                  const SizedBox(height: 10),
+                ]);
+              },
+            ),
           for (final s in streams)
             Padding(
               padding: const EdgeInsets.only(bottom: 14),

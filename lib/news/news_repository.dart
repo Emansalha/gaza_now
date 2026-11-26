@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,16 +54,45 @@ class NewsRepository extends ChangeNotifier {
     if (loading) return;
     loading = true;
     notifyListeners();
-    final failed = <String>{};
+    try {
+      // Both at once: our API (photos already found, may be a few hours old)
+      // and every outlet's RSS directly (always fresh).
+      final apiFuture = _fetchOwnApi();
+      final rssFuture = _fetchAllRss();
+      final api = await apiFuture;
+      final rss = await rssFuture;
 
-    // 1) Our own API: one fast request, photos already resolved.
-    final api = await _fetchOwnApi();
-    if (api != null && api.articles.isNotEmpty) {
-      _apply(api.articles, api.failed);
-      return;
+      final failed = <String>{...rss.failed};
+      final byLink = <String, Article>{};
+      for (final a in api?.articles ?? const <Article>[]) {
+        byLink[a.link] = a;
+      }
+      for (final a in rss.articles) {
+        final fromApi = byLink[a.link];
+        // Fresh RSS text wins; keep the photo the API already found.
+        byLink[a.link] = a.imageUrl == null && fromApi?.imageUrl != null ? a.copyWith(imageUrl: fromApi!.imageUrl) : a;
+      }
+      // A source that failed on the phone but worked on the server is not "failed".
+      if (api != null) failed.removeWhere((id) => api.articles.any((a) => a.sourceId == id));
+
+      final fresh = byLink.values.toList();
+      if (AppConfig.newsDataApiKey.isNotEmpty) {
+        try {
+          fresh.addAll(await _fetchNewsData());
+        } catch (_) {
+          failed.add(apiSource.id);
+        }
+      }
+      _apply(fresh, failed);
+    } catch (_) {
+      // Never leave the screen stuck in "loading".
+      loading = false;
+      notifyListeners();
     }
+  }
 
-    // 2) Fallback: read every outlet's RSS directly.
+  Future<({List<Article> articles, Set<String> failed})> _fetchAllRss() async {
+    final failed = <String>{};
     final results = await Future.wait(newsSources.map((s) async {
       try {
         final r = await _client.get(Uri.parse(s.feedUrl), headers: _headers).timeout(const Duration(seconds: 15));
@@ -75,16 +105,14 @@ class NewsRepository extends ChangeNotifier {
         return <Article>[];
       }
     }));
+    return (articles: results.expand((e) => e).toList(), failed: failed);
+  }
 
-    final fresh = results.expand((e) => e).toList();
-    if (AppConfig.newsDataApiKey.isNotEmpty) {
-      try {
-        fresh.addAll(await _fetchNewsData());
-      } catch (_) {
-        failed.add(apiSource.id);
-      }
-    }
-    _apply(fresh, failed);
+  /// Fills the list directly (tests and previews).
+  @visibleForTesting
+  void debugSetItems(List<Article> items) {
+    _items = [...items]..sort((a, b) => b.published.compareTo(a.published));
+    notifyListeners();
   }
 
   void _apply(List<Article> fresh, Set<String> failed) {
@@ -95,7 +123,7 @@ class NewsRepository extends ChangeNotifier {
         if (failed.contains(a.sourceId)) byLink.putIfAbsent(a.link, () => a);
       }
       _items = byLink.values.toList()..sort((a, b) => b.published.compareTo(a.published));
-      if (_items.length > 400) _items = _items.sublist(0, 400);
+      if (_items.length > 500) _items = _items.sublist(0, 500);
       lastUpdated = DateTime.now();
       _persistCache();
     }
@@ -113,8 +141,8 @@ class NewsRepository extends ChangeNotifier {
       if (r.statusCode != 200) return null;
       final body = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
       final generated = DateTime.tryParse(body['generated'] as String? ?? '');
-      // Ignore a stale API (e.g. the workflow stopped) and use RSS instead.
-      if (generated == null || DateTime.now().toUtc().difference(generated) > const Duration(hours: 6)) return null;
+      // GitHub runs the job every few hours; ignore it only if it has stopped.
+      if (generated == null || DateTime.now().toUtc().difference(generated) > const Duration(hours: 48)) return null;
       final list = (body['articles'] as List? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(Article.fromJson)

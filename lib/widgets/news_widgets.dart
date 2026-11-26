@@ -140,6 +140,11 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
       );
 }
 
+String _initial(String? name, String fallback) {
+  final n = (name ?? '').trim().isNotEmpty ? name!.trim() : fallback;
+  return n.isEmpty ? '•' : n.characters.first;
+}
+
 class SourceBadge extends StatelessWidget {
   final NewsSource source;
   final String? name;
@@ -153,12 +158,12 @@ class SourceBadge extends StatelessWidget {
           height: 18,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: source.color, shape: BoxShape.circle),
-          child: Text((name ?? source.name).characters.first,
+          child: Text(_initial(name, source.name),
               style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, height: 1.1)),
         ),
         const SizedBox(width: 6),
         Flexible(
-          child: Text(name ?? source.name,
+          child: Text((name ?? '').trim().isNotEmpty ? name!.trim() : source.name,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
@@ -220,15 +225,15 @@ class FeaturedCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(article.title,
-                  maxLines: 3,
+                  maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, height: 1.45, color: context.titleColor)),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, height: 1.45, color: context.titleColor)),
               if (article.summary.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(article.summary,
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.grey, height: 1.5, fontSize: 13)),
+                    style: TextStyle(color: context.titleColor.withValues(alpha: .7), height: 1.6, fontSize: 14)),
               ],
             ]),
           ),
@@ -237,7 +242,7 @@ class FeaturedCard extends StatelessWidget {
             child: Row(children: [
               Flexible(child: SourceBadge.of(article)),
               const SizedBox(width: 8),
-              Text('• ${timeAgo(article.published)}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              Text('• ${timeAgo(article.published)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
               const Spacer(),
               _SaveButton(article),
             ]),
@@ -270,18 +275,17 @@ class CompactCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: SizedBox(
-                height: 92,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 92),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                   Text(article.title,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, height: 1.4, color: context.titleColor)),
-                  const Spacer(),
-                  Row(children: [
-                    Flexible(child: SourceBadge.of(article)),
-                    const SizedBox(width: 6),
-                    Text(timeAgo(article.published), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, height: 1.45, color: context.titleColor)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    SourceBadge.of(article),
+                    Text(timeAgo(article.published), style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   ]),
                 ]),
               ),
@@ -573,6 +577,30 @@ class InfoNote extends StatelessWidget {
           Icon(icon, color: teal, size: 19),
           const SizedBox(width: 8),
           Expanded(child: Text(text, style: TextStyle(color: context.titleColor, height: 1.55, fontSize: 12))),
+        ]),
+      );
+}
+
+/// Shown under the last story so the reader knows the list really ended.
+class FeedEnd extends StatelessWidget {
+  final int count;
+  final VoidCallback onRefresh;
+  final VoidCallback? onShowAll;
+  const FeedEnd({super.key, required this.count, required this.onRefresh, this.onShowAll});
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(children: [
+          const Icon(Icons.check_circle_outline, color: teal, size: 30),
+          const SizedBox(height: 8),
+          Text('شاهدت كل الأخبار ($count خبراً)',
+              style: TextStyle(fontWeight: FontWeight.w700, color: context.titleColor)),
+          const SizedBox(height: 10),
+          Wrap(spacing: 10, runSpacing: 8, alignment: WrapAlignment.center, children: [
+            OutlinedButton.icon(onPressed: onRefresh, icon: const Icon(Icons.refresh), label: const Text('تحديث الأخبار')),
+            if (onShowAll != null)
+              FilledButton.icon(onPressed: onShowAll, icon: const Icon(Icons.public), label: const Text('عرض كل الأخبار')),
+          ]),
         ]),
       );
 }

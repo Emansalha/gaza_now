@@ -7,8 +7,14 @@ import '../theme.dart';
 import '../widgets/news_widgets.dart';
 
 class HomePage extends StatefulWidget {
-  final VoidCallback onOpenChannel, onOpenLive;
-  const HomePage({super.key, required this.onOpenChannel, required this.onOpenLive});
+  final VoidCallback onOpenChannel, onOpenLive, onOpenRadio, onOpenMap;
+  const HomePage({
+    super.key,
+    required this.onOpenChannel,
+    required this.onOpenLive,
+    required this.onOpenRadio,
+    required this.onOpenMap,
+  });
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -66,6 +72,16 @@ class _HomePageState extends State<HomePage> {
                   child: _QuickAction(icon: Icons.live_tv, label: 'البث المباشر', onTap: widget.onOpenLive, color: urgent),
                 ),
               ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: _QuickAction(icon: Icons.radio, label: 'راديو الأخبار', onTap: widget.onOpenRadio, color: const Color(0xFF6A4FB3)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _QuickAction(icon: Icons.map_outlined, label: 'خريطة غزة', onTap: widget.onOpenMap, color: const Color(0xFF2B8C8C)),
+                ),
+              ]),
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
@@ -119,7 +135,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           sliver: loadingFirst
               ? SliverList(delegate: SliverChildBuilderDelegate((_, __) => const CardSkeleton(), childCount: 6))
               : feed.isEmpty
@@ -148,6 +164,15 @@ class _HomePageState extends State<HomePage> {
                         childCount: feed.length + (feed.length > 4 ? 1 : 0),
                       ),
                     ),
+        ),
+        SliverToBoxAdapter(
+          child: loadingFirst || feed.isEmpty
+              ? const SizedBox(height: 24)
+              : FeedEnd(
+                  count: feed.length,
+                  onRefresh: repo.refresh,
+                  onShowAll: gazaOnly ? () => setState(() => gazaOnly = false) : null,
+                ),
         ),
       ]),
     );

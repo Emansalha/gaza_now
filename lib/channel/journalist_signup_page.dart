@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 import 'channel_models.dart';
+import 'channel_page.dart' show channelRegions;
 import 'channel_repository.dart';
 
 class JournalistSignupPage extends StatefulWidget {
@@ -17,11 +18,13 @@ class _JournalistSignupPageState extends State<JournalistSignupPage> {
   final _outlet = TextEditingController();
   final _phone = TextEditingController();
   final _pressId = TextEditingController();
+  final _bio = TextEditingController();
+  String region = channelRegions.first;
   bool pledge = false;
 
   @override
   void dispose() {
-    for (final c in [_name, _outlet, _phone, _pressId]) {
+    for (final c in [_name, _outlet, _phone, _pressId, _bio]) {
       c.dispose();
     }
     super.dispose();
@@ -42,6 +45,8 @@ class _JournalistSignupPageState extends State<JournalistSignupPage> {
       outlet: _outlet.text.trim(),
       phone: _phone.text.trim(),
       pressId: _pressId.text.trim(),
+      region: region,
+      bio: _bio.text.trim(),
     ));
     await widget.repo.setSubscribed(true);
     if (mounted) Navigator.pop(context, true);
@@ -73,7 +78,7 @@ class _JournalistSignupPageState extends State<JournalistSignupPage> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'انضم إلى مراسلي غزة الآن وانشر أخبارك مباشرة في القناة لتصل إلى جميع المشتركين فوراً.',
+                  'انضم إلى مراسلي غزة الآن: انشر أخبارك وابدأ بثاً مباشراً يصل إلى المشتركين فوراً.',
                   style: TextStyle(color: Colors.white, height: 1.6, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -92,6 +97,19 @@ class _JournalistSignupPageState extends State<JournalistSignupPage> {
           ),
           const SizedBox(height: 12),
           TextFormField(controller: _pressId, decoration: _deco('رقم البطاقة الصحفية (اختياري)', Icons.badge_outlined)),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: region,
+            items: [for (final r in channelRegions) DropdownMenuItem(value: r, child: Text(r))],
+            onChanged: (v) => setState(() => region = v ?? region),
+            decoration: _deco('منطقة التغطية', Icons.location_on_outlined),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _bio,
+            maxLines: 2,
+            decoration: _deco('نبذة قصيرة (اختياري)', Icons.info_outline),
+          ),
           const SizedBox(height: 14),
           CheckboxListTile(
             value: pledge,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 const Color ink = Color(0xFF073B49);
 const Color teal = Color(0xFF087D89);
@@ -9,10 +8,9 @@ const Color urgent = Color(0xFFE53935);
 ThemeData buildTheme(Brightness brightness) {
   final dark = brightness == Brightness.dark;
   final scheme = ColorScheme.fromSeed(seedColor: teal, brightness: brightness);
-  final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme);
+  final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme, fontFamily: 'Tajawal');
   return base.copyWith(
     scaffoldBackgroundColor: dark ? const Color(0xFF0B1A1E) : pale,
-    textTheme: GoogleFonts.cairoTextTheme(base.textTheme),
     appBarTheme: AppBarTheme(
       backgroundColor: dark ? const Color(0xFF0F2328) : Colors.white,
       foregroundColor: dark ? Colors.white : ink,

@@ -15,6 +15,8 @@ abstract class ChannelRepository {
   List<ChannelPost> get posts;
   Future<void> publish(ChannelPost post);
   Future<void> deletePost(String id);
+  Future<void> endLive(String id);
+  List<ChannelPost> get activeLives;
 
   bool get subscribed;
   int get subscriberCount;
@@ -69,6 +71,15 @@ class LocalChannelRepository implements ChannelRepository {
   @override
   Future<void> publish(ChannelPost post) async {
     _posts = [post, ..._posts];
+    await _save();
+  }
+
+  @override
+  List<ChannelPost> get activeLives => _posts.where((p) => p.isLive).toList();
+
+  @override
+  Future<void> endLive(String id) async {
+    _posts = [for (final p in _posts) p.id == id ? p.endLive() : p];
     await _save();
   }
 

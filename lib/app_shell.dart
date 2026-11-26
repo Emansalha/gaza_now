@@ -11,6 +11,7 @@ import 'pages/home_page.dart';
 import 'pages/list_pages.dart';
 import 'pages/map_page.dart';
 import 'pages/privacy_page.dart';
+import 'radio/radio.dart';
 import 'theme.dart';
 import 'widgets/news_widgets.dart';
 
@@ -62,15 +63,29 @@ class _AppShellState extends State<AppShell> {
       });
 
   void push(Widget page) => Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  void openLive() => push(LivePage(channel: widget.channel));
+  void openMap() => push(Scaffold(appBar: AppBar(title: const Text('خريطة غزة')), body: const MapPage()));
+  static const radioTab = 1;
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomePage(onOpenChannel: () => setTab(channelTab), onOpenLive: () => push(const LivePage())),
-      const MapPage(),
-      ChannelPage(repo: widget.channel, onOpenLive: () => push(const LivePage())),
+      HomePage(
+        onOpenChannel: () => setTab(channelTab),
+        onOpenLive: openLive,
+        onOpenRadio: () => setTab(radioTab),
+        onOpenMap: openMap,
+      ),
+      const RadioPage(),
+      ChannelPage(repo: widget.channel, onOpenLive: openLive),
       const SavedPage(),
-      MorePage(darkMode: widget.darkMode, onOpenChannel: () => setTab(channelTab), push: push),
+      MorePage(
+        darkMode: widget.darkMode,
+        onOpenChannel: () => setTab(channelTab),
+        onOpenLive: openLive,
+        onOpenMap: openMap,
+        push: push,
+      ),
     ];
     return Scaffold(
       appBar: tab == 4 || tab == channelTab
@@ -100,13 +115,15 @@ class _AppShellState extends State<AppShell> {
               ],
             ),
       body: IndexedStack(index: tab, children: pages),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (tab != radioTab) MiniPlayer(onOpen: () => setTab(radioTab)),
+        NavigationBar(
         selectedIndex: tab,
         onDestinationSelected: setTab,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'الرئيسية'),
-          const NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map_rounded), label: 'الخريطة'),
+          const NavigationDestination(icon: Icon(Icons.radio_outlined), selectedIcon: Icon(Icons.radio), label: 'الراديو'),
           NavigationDestination(
             icon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Icons.campaign_outlined)),
             selectedIcon: const Icon(Icons.campaign),
@@ -115,16 +132,24 @@ class _AppShellState extends State<AppShell> {
           const NavigationDestination(icon: Icon(Icons.bookmark_border), selectedIcon: Icon(Icons.bookmark), label: 'المحفوظات'),
           const NavigationDestination(icon: Icon(Icons.menu), selectedIcon: Icon(Icons.menu_open), label: 'المزيد'),
         ],
-      ),
+        ),
+      ]),
     );
   }
 }
 
 class MorePage extends StatelessWidget {
   final ValueNotifier<bool> darkMode;
-  final VoidCallback onOpenChannel;
+  final VoidCallback onOpenChannel, onOpenLive, onOpenMap;
   final void Function(Widget) push;
-  const MorePage({super.key, required this.darkMode, required this.onOpenChannel, required this.push});
+  const MorePage({
+    super.key,
+    required this.darkMode,
+    required this.onOpenChannel,
+    required this.onOpenLive,
+    required this.onOpenMap,
+    required this.push,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +189,9 @@ class MorePage extends StatelessWidget {
           const Divider(height: 1),
           _Tile(Icons.notifications_outlined, 'آخر التحديثات', 'خط زمني لأحدث أخبار غزة', () => push(const UpdatesPage())),
           const Divider(height: 1),
-          _Tile(Icons.live_tv, 'البث المباشر', 'روابط البث الرسمية للقنوات', () => push(const LivePage())),
+          _Tile(Icons.live_tv, 'البث المباشر', 'بث المراسلين والقنوات الإخبارية', onOpenLive),
+          const Divider(height: 1),
+          _Tile(Icons.map_outlined, 'خريطة غزة', 'أخبار كل محافظة', onOpenMap),
           const Divider(height: 1),
           _Tile(Icons.campaign_outlined, 'قناة المراسلين', 'اشترك أو انضم كصحفي', onOpenChannel),
         ]),
@@ -190,11 +217,11 @@ class MorePage extends StatelessWidget {
           const Divider(height: 1),
           _Tile(Icons.privacy_tip_outlined, 'سياسة الخصوصية', 'كيف نتعامل مع بياناتك والإعلانات', () => push(const PrivacyPage())),
           const Divider(height: 1),
-          _Tile(Icons.info_outline, 'حول التطبيق', 'الإصدار 1.4.0', () {
+          _Tile(Icons.info_outline, 'حول التطبيق', 'الإصدار 1.5.0', () {
             showAboutDialog(
               context: context,
               applicationName: 'غزة الآن',
-              applicationVersion: '1.4.0',
+              applicationVersion: '1.5.0',
               applicationIcon: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.asset('assets/images/logo.png', width: 44, height: 44),

@@ -24,11 +24,14 @@ UA = "Mozilla/5.0 (Linux; Android 14) GazaNow-API/1.0"
 
 SOURCES = [
     ("aljazeera", "الجزيرة نت", "https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9"),
+    ("arab48", "عرب 48", "https://www.arab48.com/rss"),
+    ("alquds", "القدس العربي", "https://www.alquds.co.uk/feed/"),
     ("un", "أخبار الأمم المتحدة", "https://news.un.org/feed/subscribe/ar/news/all/rss.xml"),
     ("bbc", "بي بي سي عربي", "https://feeds.bbci.co.uk/arabic/middleeast/rss.xml"),
     ("france24", "فرانس 24", "https://www.france24.com/ar/%D8%A7%D9%84%D8%B4%D8%B1%D9%82-%D8%A7%D9%84%D8%A3%D9%88%D8%B3%D8%B7/rss"),
     ("aa", "الأناضول", "https://www.aa.com.tr/ar/rss/default?cat=guncel"),
     ("skynews", "سكاي نيوز عربية", "https://www.skynewsarabia.com/rss"),
+    ("cnn", "CNN بالعربية", "https://arabic.cnn.com/api/v1/rss/middle_east/rss.xml"),
     ("dw", "DW عربية", "https://rss.dw.com/rdf/rss-ar-all"),
 ]
 
@@ -201,7 +204,7 @@ def main(out_path):
         seen.add(a["link"])
         a["isGaza"] = any(k in a["title"] + " " + a["summary"] for k in GAZA)
         unique.append(a)
-    unique = unique[:250]
+    unique = unique[:320]
 
     # Fill in missing photos from each article page (Gaza stories first).
     missing = [a for a in unique if not a["imageUrl"]]
