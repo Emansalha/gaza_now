@@ -9,6 +9,7 @@ import 'package:gaza_now/channel/channel_repository.dart';
 import 'package:gaza_now/channel/journalist_signup_page.dart';
 import 'package:gaza_now/pages/map_page.dart';
 import 'package:gaza_now/pages/privacy_page.dart';
+import 'package:gaza_now/pages/reader_page.dart';
 import 'package:gaza_now/news/news_models.dart';
 import 'package:gaza_now/news/news_repository.dart';
 import 'package:gaza_now/pages/article_page.dart';
@@ -64,6 +65,7 @@ class Harness {
 
 Future<Harness> setUpHarness(WidgetTester tester, {int stories = 60}) async {
   AdService.enabled = false;
+  webViewAvailable = false;
   // A small phone with the largest text size the app allows.
   tester.view.physicalSize = const Size(1080, 2280);
   tester.view.devicePixelRatio = 3;
@@ -104,6 +106,32 @@ void main() {
     await tester.tap(find.text('عرض كل الأخبار'));
     await tester.pump(const Duration(milliseconds: 300));
     await scrollToEnd(tester, find.byType(CustomScrollView).first);
+    expect(tester.takeException(), isNull);
+    await tearDownApp(tester);
+  });
+
+  testWidgets('Tapping a story opens it with its title, cover and summary', (tester) async {
+    final h = await setUpHarness(tester, stories: 12);
+    await tester.pumpWidget(h.wrap(AppShell(darkMode: ValueNotifier(false), channel: h.channel)));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Scroll until a compact story card is on screen, then tap it.
+    final card = find.byType(CompactCard).first;
+    await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+    final article = tester.widget<CompactCard>(card).article;
+    await tester.tap(card);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.byType(ArticlePage), findsOneWidget);
+    expect(find.text(article.title), findsWidgets);
+    expect(find.text('قراءة الخبر كاملاً بملء الشاشة'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // Back to the list works too.
+    await tester.pageBack();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(ArticlePage), findsNothing);
     expect(tester.takeException(), isNull);
     await tearDownApp(tester);
   });

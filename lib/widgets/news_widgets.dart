@@ -75,6 +75,11 @@ class _NewsImageState extends State<NewsImage> {
         ? (resolving ? const Skeleton() : _Placeholder(source: widget.article.source))
         : CachedNetworkImage(
             imageUrl: url!,
+            // Some news sites refuse image requests that do not look like a browser.
+            httpHeaders: {
+              'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Mobile Safari/537.36',
+              'Referer': widget.article.source.homepage,
+            },
             fit: BoxFit.cover,
             fadeInDuration: const Duration(milliseconds: 350),
             placeholder: (_, __) => const Skeleton(),

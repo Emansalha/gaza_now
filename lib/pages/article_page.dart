@@ -7,6 +7,7 @@ import '../news/news_models.dart';
 import '../news/news_repository.dart';
 import '../theme.dart';
 import '../widgets/news_widgets.dart';
+import 'reader_page.dart';
 
 Future<void> openExternal(BuildContext context, String url) async {
   final uri = Uri.parse(url);
@@ -111,10 +112,13 @@ class ArticlePage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: () => openExternal(context, a.link),
-                  icon: const Icon(Icons.open_in_new),
-                  label: Text('اقرأ الخبر كاملاً على ${a.sourceName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ArticleReaderPage(article: a)),
+                  ),
+                  icon: const Icon(Icons.fullscreen_rounded),
+                  label: const Text('قراءة الخبر كاملاً بملء الشاشة',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -135,9 +139,22 @@ class ArticlePage extends StatelessWidget {
                   ),
                 ),
               ]),
-              const SizedBox(height: 18),
+              const SizedBox(height: 22),
+              if (webViewAvailable) ...[
+                SectionTitle('الخبر كاملاً من ${a.sourceName}'),
+                const SizedBox(height: 10),
+                // The original story, with its text and photos, inside the page.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    height: MediaQuery.sizeOf(context).height * .82,
+                    child: ArticleWebView(article: a, embedded: true),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
               InfoNote(
-                text: 'هذا الخبر منشور من ${a.sourceName} كما ورد في موجزها الرسمي، وحقوقه محفوظة لها. '
+                text: 'هذا الخبر منشور من ${a.sourceName} وحقوقه محفوظة لها، ويُعرض النص الكامل من موقعها الأصلي. '
                     'غزة الآن يجمع الأخبار من مصادر معروفة ويعرض دائماً اسم المصدر ورابط الخبر الأصلي.',
               ),
               // Ad 2: under the article.
