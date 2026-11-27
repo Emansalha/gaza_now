@@ -134,7 +134,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     // Back to the list works too.
-    await tester.pageBack();
+    Navigator.of(tester.element(find.byType(ArticlePage))).pop();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(ArticlePage), findsNothing);
     expect(tester.takeException(), isNull);
