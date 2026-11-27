@@ -37,8 +37,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       CurvedAnimation(parent: _intro, curve: const Interval(.42, .78, curve: Curves.easeOutCubic));
   late final Animation<double> _tag =
       CurvedAnimation(parent: _intro, curve: const Interval(.65, 1, curve: Curves.easeOut));
-  late final Animation<double> _spin = Tween(begin: -0.6, end: 0.0)
-      .animate(CurvedAnimation(parent: _intro, curve: const Interval(0, .5, curve: Curves.easeOutBack)));
+  /// Two full turns around the logo's own vertical axis, slowing to a stop (like a coin).
+  late final Animation<double> _spin = Tween(begin: 2.0, end: 0.0)
+      .animate(CurvedAnimation(parent: _intro, curve: const Interval(0, .62, curve: Curves.easeOutCubic)));
   late final Animation<Offset> _bar = Tween(begin: const Offset(1.2, 0), end: Offset.zero)
       .animate(CurvedAnimation(parent: _intro, curve: const Interval(.7, 1, curve: Curves.easeOutCubic)));
 
@@ -92,7 +93,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ink,
+      backgroundColor: const Color(0xFF0A0C33),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _goNext, // tap to skip
@@ -101,20 +102,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             gradient: RadialGradient(
               center: Alignment(0, -.2),
               radius: 1.1,
-              colors: [teal, ink],
+              colors: [Color(0xFF103A76), Color(0xFF0A0C33)],
             ),
           ),
           child: SafeArea(
             child: Column(children: [
               const Spacer(flex: 3),
               SizedBox(
-                width: 260,
-                height: 260,
+                width: 300,
+                height: 300,
                 child: Stack(alignment: Alignment.center, children: [
                   AnimatedBuilder(
                     animation: _pulse,
                     builder: (_, __) => CustomPaint(
-                      size: const Size(260, 260),
+                      size: const Size(300, 300),
                       painter: _RingsPainter(_pulse.isAnimating ? _pulse.value : -1),
                     ),
                   ),
@@ -122,13 +123,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     opacity: _logoFade,
                     child: ScaleTransition(
                       scale: _logoScale,
-                      child: RotationTransition(
-                        turns: _spin,
+                      child: AnimatedBuilder(
+                        animation: _spin,
+                        builder: (_, child) => Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0012) // perspective
+                            ..rotateY(2 * math.pi * _spin.value),
+                          child: child,
+                        ),
                         child: AnimatedBuilder(
                           animation: _pulse,
                           builder: (_, child) => Container(
-                            width: 140,
-                            height: 140,
+                            width: 190,
+                            height: 190,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(34),
                               boxShadow: [
@@ -147,7 +155,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             ),
                             child: child,
                           ),
-                          child: Image.asset('assets/images/logo.png'),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(34),
+                            child: Image.asset('assets/images/splash_logo.png', fit: BoxFit.cover),
+                          ),
                         ),
                       ),
                     ),
@@ -255,7 +266,7 @@ class _RingsPainter extends CustomPainter {
     const rings = 3;
     for (var i = 0; i < rings; i++) {
       final t = (progress + i / rings) % 1.0;
-      final radius = 75 + t * (size.width / 2 - 75);
+      final radius = 100 + t * (size.width / 2 - 100);
       final opacity = math.max(0.0, (1 - t)) * .45;
       final paint = Paint()
         ..style = PaintingStyle.stroke
