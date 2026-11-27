@@ -11,7 +11,10 @@ import 'theme.dart';
 /// in, and a short news jingle plays.
 class SplashScreen extends StatefulWidget {
   final WidgetBuilder next;
-  const SplashScreen({super.key, required this.next});
+
+  /// Off in screenshots/tests, where there is no audio plugin.
+  final bool playSound;
+  const SplashScreen({super.key, required this.next, this.playSound = true});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -22,9 +25,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
   late final AnimationController _pulse =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+  /// Light streaks orbiting the logo (start at once, keep going).
+  late final AnimationController _orbit =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))..repeat();
+
+  /// A band of light that sweeps across the logo after it lands.
+  late final AnimationController _sheen =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+  Timer? _sheenStart;
+
+  /// The name opens from the centre outwards.
+  late final Animation<double> _reveal =
+      CurvedAnimation(parent: _intro, curve: const Interval(.5, .85, curve: Curves.easeOutCubic));
+
   late final AnimationController _shine =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
-  final AudioPlayer _player = AudioPlayer(playerId: 'intro-jingle');
+  AudioPlayer? _player;
   Timer? _timer;
   Timer? _pulseStart;
   bool _left = false;
@@ -47,6 +63,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
     _intro.forward();
+    _sheenStart = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) _sheen.repeat(period: const Duration(milliseconds: 2000));
+    });
     _pulseStart = Timer(const Duration(milliseconds: 450), () {
       if (mounted) {
         _pulse.repeat();
@@ -59,11 +78,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _playJingle() async {
+    if (!widget.playSound) return;
     try {
-      await _player.setReleaseMode(ReleaseMode.stop);
-      await _player.setVolume(1.0);
-      await _player.setSource(AssetSource('sounds/news_intro.mp3'));
-      await _player.resume();
+      final p = _player = AudioPlayer(playerId: 'intro-jingle');
+      await p.setReleaseMode(ReleaseMode.stop);
+      await p.setVolume(1.0);
+      await p.setSource(AssetSource('sounds/news_intro.mp3'));
+      await p.resume();
     } catch (_) {
       // Sound is a nice-to-have; never block the app if audio fails.
     }
@@ -86,7 +107,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _intro.dispose();
     _pulse.dispose();
     _shine.dispose();
-    _player.dispose();
+    _orbit.dispose();
+    _sheen.dispose();
+    _sheenStart?.cancel();
+    _player?.dispose();
     super.dispose();
   }
 
@@ -117,6 +141,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     builder: (_, __) => CustomPaint(
                       size: const Size(300, 300),
                       painter: _RingsPainter(_pulse.isAnimating ? _pulse.value : -1),
+                    ),
+                  ),
+                  FadeTransition(
+                    opacity: _logoFade,
+                    child: AnimatedBuilder(
+                      animation: _orbit,
+                      builder: (_, __) => CustomPaint(
+                        size: const Size(300, 300),
+                        painter: _OrbitPainter(_orbit.value),
+                      ),
                     ),
                   ),
                   FadeTransition(
@@ -157,7 +191,27 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(34),
-                            child: Image.asset('assets/images/splash_logo.png', fit: BoxFit.cover),
+                            child: AnimatedBuilder(
+                              animation: _sheen,
+                              builder: (_, child) => ShaderMask(
+                                blendMode: BlendMode.srcATop,
+                                shaderCallback: (r) {
+                                  final v = _sheen.value * 1.6 - .3; // travels past both corners
+                                  return LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0),
+                                      Colors.white.withValues(alpha: _sheen.isAnimating ? .45 : 0),
+                                      Colors.white.withValues(alpha: 0),
+                                    ],
+                                    stops: [(v - .12).clamp(0.0, 1.0), v.clamp(0.0, 1.0), (v + .12).clamp(0.0, 1.0)],
+                                  ).createShader(r);
+                                },
+                                child: child,
+                              ),
+                              child: Image.asset('assets/images/splash_logo.png', fit: BoxFit.cover),
+                            ),
                           ),
                         ),
                       ),
@@ -187,17 +241,46 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ).createShader(r),
                         child: child,
                       ),
-                      child: const Text('غزة الآن',
-                          style: TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w800)),
+                      // Opens from the centre outwards.
+                      child: AnimatedBuilder(
+                        animation: _reveal,
+                        builder: (_, child) => ClipRect(
+                          child: Align(alignment: Alignment.center, widthFactor: _reveal.value, child: child),
+                        ),
+                        child: const Text('غزة الآن',
+                            style: TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w800)),
+                      ),
                     ),
-                    const SizedBox(height: 2),
-                    const Text('GAZA NOW',
-                        textDirection: TextDirection.ltr,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          letterSpacing: 6,
-                          fontWeight: FontWeight.w700,
-                        )),
+                    // A light line that draws itself under the name.
+                    AnimatedBuilder(
+                      animation: _reveal,
+                      builder: (_, __) => Container(
+                        width: 200 * _reveal.value,
+                        height: 3,
+                        margin: const EdgeInsets.only(top: 2, bottom: 6),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          gradient: const LinearGradient(colors: [
+                            Color(0x00E53935),
+                            urgent,
+                            Colors.white,
+                            urgent,
+                            Color(0x00E53935),
+                          ]),
+                        ),
+                      ),
+                    ),
+                    // Letters spread apart as the name settles.
+                    AnimatedBuilder(
+                      animation: _reveal,
+                      builder: (_, __) => Text('GAZA NOW',
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: .75),
+                            letterSpacing: 1 + 8 * _reveal.value,
+                            fontWeight: FontWeight.w700,
+                          )),
+                    ),
                   ]),
                 ),
               ),
@@ -220,7 +303,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       const Flexible(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 14),
-                          child: Text('أخبار غزة لحظة بلحظة • راديو • بث مباشر',
+                          child: Text('أخبار غزة لحظة بلحظة',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: ink, fontWeight: FontWeight.w700, fontSize: 13)),
@@ -267,7 +350,7 @@ class _RingsPainter extends CustomPainter {
     for (var i = 0; i < rings; i++) {
       final t = (progress + i / rings) % 1.0;
       final radius = 100 + t * (size.width / 2 - 100);
-      final opacity = math.max(0.0, (1 - t)) * .45;
+      final opacity = math.max(0.0, (1 - t)) * .25;
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5
@@ -278,4 +361,47 @@ class _RingsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingsPainter old) => old.progress != progress;
+}
+
+/// Two comets of light (blue and red) chasing each other around the logo on a faint track.
+class _OrbitPainter extends CustomPainter {
+  final double t; // 0..1, one full turn
+  _OrbitPainter(this.t);
+
+  void _comet(Canvas canvas, Offset c, double r, double angle, Color color, double width) {
+    final rect = Rect.fromCircle(center: c, radius: r);
+    // Tail: transparent behind, full colour at the head.
+    final tail = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.round
+      ..shader = SweepGradient(
+        colors: [color.withValues(alpha: 0), color.withValues(alpha: 0), color.withValues(alpha: .9)],
+        stops: const [0, .62, 1],
+        transform: GradientRotation(angle),
+      ).createShader(rect);
+    canvas.drawArc(rect, angle + 2 * math.pi * .62, 2 * math.pi * .38, false, tail);
+    // Glowing head.
+    final head = c + Offset(math.cos(angle + 2 * math.pi), math.sin(angle + 2 * math.pi)) * r;
+    canvas.drawCircle(head, width * 2.2, Paint()..color = color.withValues(alpha: .35)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+    canvas.drawCircle(head, width * .9, Paint()..color = Colors.white);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    canvas.drawCircle(
+      c,
+      142,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: .12),
+    );
+    _comet(canvas, c, 142, 2 * math.pi * t, const Color(0xFF6EC6FF), 3);
+    _comet(canvas, c, 142, 2 * math.pi * t + math.pi, const Color(0xFFE53935), 3);
+  }
+
+  @override
+  bool shouldRepaint(_OrbitPainter old) => old.t != t;
 }
