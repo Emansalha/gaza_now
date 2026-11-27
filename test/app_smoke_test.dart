@@ -135,7 +135,9 @@ void main() {
 
     // Back to the list works too.
     Navigator.of(tester.element(find.byType(ArticlePage))).pop();
-    await tester.pump(const Duration(milliseconds: 600));
+    for (var k = 0; k < 10; k++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.byType(ArticlePage), findsNothing);
     expect(tester.takeException(), isNull);
     await tearDownApp(tester);
