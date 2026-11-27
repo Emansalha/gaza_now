@@ -1,4 +1,4 @@
-// No dart:io here: Platform throws in the browser (Chrome), which broke the feed and
+// No io Platform checks here: they throw in the browser (Chrome), which broke the feed and
 // the story page there. defaultTargetPlatform works everywhere.
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 
