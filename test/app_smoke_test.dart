@@ -130,7 +130,7 @@ void main() {
 
     expect(find.byType(ArticlePage), findsOneWidget);
     expect(find.text(article.title), findsWidgets);
-    expect(find.text('قراءة الخبر كاملاً بملء الشاشة'), findsOneWidget);
+    expect(find.textContaining('اقرأ الخبر كاملاً'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     // Back to the list works too.

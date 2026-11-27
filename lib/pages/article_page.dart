@@ -112,13 +112,13 @@ class ArticlePage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => ArticleReaderPage(article: a)),
-                  ),
+                  // On a phone the story opens inside the app; in a browser, in a new tab.
+                  onPressed: () => webViewAvailable
+                      ? Navigator.push(context, MaterialPageRoute(builder: (_) => ArticleReaderPage(article: a)))
+                      : openExternal(context, a.link),
                   icon: const Icon(Icons.fullscreen_rounded),
-                  label: const Text('قراءة الخبر كاملاً بملء الشاشة',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  label: Text(webViewAvailable ? 'قراءة الخبر كاملاً بملء الشاشة' : 'اقرأ الخبر كاملاً على ${a.sourceName}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
               ),
               const SizedBox(height: 10),

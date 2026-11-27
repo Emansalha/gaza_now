@@ -58,7 +58,10 @@ class NewsRepository extends ChangeNotifier {
       // Both at once: our API (photos already found, may be a few hours old)
       // and every outlet's RSS directly (always fresh).
       final apiFuture = _fetchOwnApi();
-      final rssFuture = _fetchAllRss();
+      // Browsers block reading other sites' RSS (CORS); there the API alone is used.
+      final rssFuture = kIsWeb
+          ? Future.value((articles: <Article>[], failed: <String>{}))
+          : _fetchAllRss();
       final api = await apiFuture;
       final rss = await rssFuture;
 

@@ -59,6 +59,11 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Browser checks (the app must also run in Chrome)
+        run: |
+          if grep -rn "dart:io" lib/; then echo "dart:io breaks the browser build"; exit 1; fi
+          flutter build web --release
+
       - name: Build release APK
         run: flutter build apk --release $DART_DEFINES
 

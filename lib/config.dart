@@ -1,4 +1,8 @@
-import 'dart:io' show Platform;
+// No dart:io here: Platform throws in the browser (Chrome), which broke the feed and
+// the story page there. defaultTargetPlatform works everywhere.
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+
+bool get _isIos => defaultTargetPlatform == TargetPlatform.iOS;
 
 /// Everything you need to change before publishing lives here.
 ///
@@ -24,14 +28,14 @@ class AppConfig {
       defaultValue: 'ca-app-pub-3940256099942544/4411468910');
 
   /// Ad 1: banner on the home feed.
-  static String get homeBannerId => Platform.isIOS ? _bannerIos : _bannerAndroid;
+  static String get homeBannerId => _isIos ? _bannerIos : _bannerAndroid;
 
   /// Ad 2: medium rectangle under each article.
-  static String get articleAdId => Platform.isIOS ? _articleIos : _articleAndroid;
+  static String get articleAdId => _isIos ? _articleIos : _articleAndroid;
 
   /// Ad 3: full-screen ad, shown at most once every [interstitialEvery] article
   /// opens and never more often than [interstitialMinGap].
-  static String get interstitialId => Platform.isIOS ? _interstitialIos : _interstitialAndroid;
+  static String get interstitialId => _isIos ? _interstitialIos : _interstitialAndroid;
   static const interstitialEvery = 5;
   static const interstitialMinGap = Duration(minutes: 3);
 

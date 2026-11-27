@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../ads/ads.dart';
@@ -73,7 +74,16 @@ class _NewsImageState extends State<NewsImage> {
   Widget build(BuildContext context) {
     final Widget child = url == null
         ? (resolving ? const Skeleton() : _Placeholder(source: widget.article.source))
-        : CachedNetworkImage(
+        : kIsWeb
+            // In the browser, show news photos as plain <img> elements: most news sites
+            // do not allow the cross-origin reads Flutter's own renderer needs.
+            ? Image.network(
+                url!,
+                fit: BoxFit.cover,
+                webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                errorBuilder: (_, __, ___) => _Placeholder(source: widget.article.source),
+              )
+            : CachedNetworkImage(
             imageUrl: url!,
             // Some news sites refuse image requests that do not look like a browser.
             httpHeaders: {
