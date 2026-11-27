@@ -6,6 +6,20 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
+/// Loads the intro music before the first frame so it can start with the logo.
+/// Returns null if audio is unavailable (it never blocks the app for long).
+Future<AudioPlayer?> prepareIntroSound() async {
+  try {
+    final p = AudioPlayer(playerId: 'intro-jingle');
+    await p.setReleaseMode(ReleaseMode.stop);
+    await p.setVolume(1.0);
+    await p.setSource(AssetSource('sounds/news_intro.mp3')).timeout(const Duration(milliseconds: 2500));
+    return p;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Opening screen: the logo spins in with a bounce and a glow, broadcast rings
 /// pulse around it, the name slides up with a shine, a red "breaking" bar sweeps
 /// in, and a short news jingle plays.
@@ -14,7 +28,10 @@ class SplashScreen extends StatefulWidget {
 
   /// Off in screenshots/tests, where there is no audio plugin.
   final bool playSound;
-  const SplashScreen({super.key, required this.next, this.playSound = true});
+
+  /// The intro music, already loaded before the app appears (see [prepareIntroSound]).
+  final AudioPlayer? introPlayer;
+  const SplashScreen({super.key, required this.next, this.playSound = true, this.introPlayer});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -59,9 +76,43 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late final Animation<Offset> _bar = Tween(begin: const Offset(1.2, 0), end: Offset.zero)
       .animate(CurvedAnimation(parent: _intro, curve: const Interval(.7, 1, curve: Curves.easeOutCubic)));
 
+  bool _started = false;
+  final DateTime _shownAt = DateTime.now();
+  StreamSubscription<PlayerState>? _stateSub;
+  StreamSubscription<void>? _doneSub;
+
   @override
   void initState() {
     super.initState();
+    final p = widget.introPlayer;
+    if (p == null || !widget.playSound) {
+      _startAnimations();
+      _timer = Timer(const Duration(milliseconds: 4200), _goNext);
+      return;
+    }
+    _player = p;
+    // The animation starts the moment the sound really starts, so the hit lands
+    // exactly when the logo stops spinning.
+    _stateSub = p.onPlayerStateChanged.listen((s) {
+      if (s == PlayerState.playing) _startAnimations();
+    });
+    // Leave the logo only after the music has finished: it never plays over the news.
+    _doneSub = p.onPlayerComplete.listen((_) => _goNext());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await p.resume();
+      } catch (_) {
+        _startAnimations();
+      }
+    });
+    // Safety nets: start anyway if the sound is slow, and never stay longer than 7 s.
+    Timer(const Duration(milliseconds: 900), _startAnimations);
+    _timer = Timer(const Duration(seconds: 7), _goNext);
+  }
+
+  void _startAnimations() {
+    if (_started || !mounted) return;
+    _started = true;
     _intro.forward();
     _sheenStart = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) _sheen.repeat(period: const Duration(milliseconds: 2000));
@@ -72,27 +123,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         _shine.repeat();
       }
     });
-    // Start the sound once the first frame is on screen, so it lines up with the logo.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _playJingle());
-    _timer = Timer(const Duration(milliseconds: 4200), _goNext);
-  }
-
-  Future<void> _playJingle() async {
-    if (!widget.playSound) return;
-    try {
-      final p = _player = AudioPlayer(playerId: 'intro-jingle');
-      await p.setReleaseMode(ReleaseMode.stop);
-      await p.setVolume(1.0);
-      await p.setSource(AssetSource('sounds/news_intro.mp3'));
-      await p.resume();
-    } catch (_) {
-      // Sound is a nice-to-have; never block the app if audio fails.
-    }
+    // Without sound (or if it never reports completion) move on after the animation.
+    if (widget.introPlayer == null) return;
+    Timer(const Duration(milliseconds: 5200), _goNext);
   }
 
   void _goNext() {
     if (_left || !mounted) return;
+    // Tapped/finished too early? Keep the logo up for at least 3.5 s.
+    final shown = DateTime.now().difference(_shownAt);
+    if (shown < const Duration(milliseconds: 3500)) {
+      Timer(const Duration(milliseconds: 3500) - shown, _goNext);
+      return;
+    }
     _left = true;
+    _player?.stop();
     Navigator.of(context).pushReplacement(PageRouteBuilder(
       transitionDuration: const Duration(milliseconds: 650),
       pageBuilder: (c, _, __) => widget.next(c),
@@ -110,6 +155,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _orbit.dispose();
     _sheen.dispose();
     _sheenStart?.cancel();
+    _stateSub?.cancel();
+    _doneSub?.cancel();
+    _player?.stop();
     _player?.dispose();
     super.dispose();
   }

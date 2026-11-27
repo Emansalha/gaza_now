@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,10 +22,12 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final darkMode = ValueNotifier<bool>(prefs.getBool('dark') ?? false);
   darkMode.addListener(() => prefs.setBool('dark', darkMode.value));
+  // Load the intro music now so it plays with the logo, not after it.
+  final intro = await prepareIntroSound();
   final news = NewsRepository(prefs);
   // Start downloading news while the splash animation plays.
   news.refresh();
-  runApp(GazaNowApp(darkMode: darkMode, channel: LocalChannelRepository(prefs), news: news, radio: RadioService()));
+  runApp(GazaNowApp(darkMode: darkMode, channel: LocalChannelRepository(prefs), news: news, radio: RadioService(), intro: intro));
   // Ads start after the first frame so they never delay the app opening.
   AdService.instance.init();
 }
@@ -34,7 +37,15 @@ class GazaNowApp extends StatelessWidget {
   final ChannelRepository channel;
   final NewsRepository news;
   final RadioService radio;
-  const GazaNowApp({super.key, required this.darkMode, required this.channel, required this.news, required this.radio});
+  final AudioPlayer? intro;
+  const GazaNowApp({
+    super.key,
+    required this.darkMode,
+    required this.channel,
+    required this.news,
+    required this.radio,
+    this.intro,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +78,7 @@ class GazaNowApp extends StatelessWidget {
             );
           },
           home: SplashScreen(
+            introPlayer: intro,
             next: (_) => AppShell(darkMode: darkMode, channel: channel),
           ),
         ),
