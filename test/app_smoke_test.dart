@@ -116,8 +116,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // Scroll until a compact story card is on screen, then tap it.
+    for (var k = 0; k < 20 && find.byType(CompactCard).evaluate().isEmpty; k++) {
+      await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -300));
+      await tester.pump(const Duration(milliseconds: 60));
+    }
     final card = find.byType(CompactCard).first;
-    await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 100));
     final article = tester.widget<CompactCard>(card).article;
     await tester.tap(card);
     await tester.pump();
