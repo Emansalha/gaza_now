@@ -221,11 +221,11 @@ class MorePage extends StatelessWidget {
           const Divider(height: 1),
           _Tile(Icons.privacy_tip_outlined, 'سياسة الخصوصية', 'كيف نتعامل مع بياناتك والإعلانات', () => push(const PrivacyPage())),
           const Divider(height: 1),
-          _Tile(Icons.info_outline, 'حول التطبيق', 'الإصدار 1.7.2', () {
+          _Tile(Icons.info_outline, 'حول التطبيق', 'الإصدار 1.7.3', () {
             showAboutDialog(
               context: context,
               applicationName: 'غزة الآن',
-              applicationVersion: '1.7.2',
+              applicationVersion: '1.7.3',
               applicationIcon: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.asset('assets/images/logo.png', width: 44, height: 44),
