@@ -179,6 +179,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         behavior: HitTestBehavior.opaque,
         onTap: _goNext, // tap to skip
         child: Container(
+          // Fill the whole screen (otherwise the gradient shrinks to the widest child).
+          width: double.infinity,
+          height: double.infinity,
           decoration: const BoxDecoration(
             gradient: RadialGradient(
               center: Alignment(0, -.2),
