@@ -9,13 +9,22 @@ import 'theme.dart';
 /// Loads the intro music before the first frame so it can start with the logo.
 /// Returns null if audio is unavailable (it never blocks the app for long).
 Future<AudioPlayer?> prepareIntroSound() async {
-  try {
-    final p = AudioPlayer(playerId: 'intro-jingle');
-    await p.setReleaseMode(ReleaseMode.stop);
-    await p.setVolume(1.0);
-    await p.setSource(AssetSource('sounds/news_intro.mp3')).timeout(const Duration(milliseconds: 2500));
+  AudioPlayer? p;
+  Future<AudioPlayer?> load() async {
+    p = AudioPlayer(playerId: 'intro-jingle');
+    await p!.setReleaseMode(ReleaseMode.stop);
+    await p!.setVolume(1.0);
+    await p!.setSource(AssetSource('sounds/news_intro.mp3'));
     return p;
-  } catch (_) {
+  }
+
+  try {
+    // Every step together is capped: on some devices the audio plugin never answers,
+    // and the app must not wait on the launch screen for it.
+    return await load().timeout(const Duration(milliseconds: 1500));
+  } catch (e) {
+    debugPrint('GazaNow: intro sound not ready ($e), starting without it');
+    p?.dispose().catchError((_) {});
     return null;
   }
 }

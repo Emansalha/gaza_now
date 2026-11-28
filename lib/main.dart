@@ -19,11 +19,13 @@ Future<void> main() async {
   if (kReleaseMode) {
     ErrorWidget.builder = (details) => const SizedBox.shrink();
   }
+  debugPrint('GazaNow: main() started');
   final prefs = await SharedPreferences.getInstance();
   final darkMode = ValueNotifier<bool>(prefs.getBool('dark') ?? false);
   darkMode.addListener(() => prefs.setBool('dark', darkMode.value));
   // Load the intro music now so it plays with the logo, not after it.
-  final intro = await prepareIntroSound();
+  final intro = await prepareIntroSound().timeout(const Duration(seconds: 2), onTimeout: () => null);
+  debugPrint('GazaNow: starting (intro sound ${intro == null ? 'off' : 'ready'})');
   final news = NewsRepository(prefs);
   // Start downloading news while the splash animation plays.
   news.refresh();
