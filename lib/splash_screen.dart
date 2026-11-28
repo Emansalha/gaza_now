@@ -225,29 +225,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                         child: AnimatedBuilder(
                           animation: _pulse,
+                          // A round glow that breathes with the rings: no square frame or shadow.
                           builder: (_, child) => Container(
-                            width: 190,
-                            height: 190,
+                            width: 250,
+                            height: 250,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(34),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: .35),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 14),
-                                ),
-                                // Soft glow that breathes with the rings.
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: .10 + .18 * math.sin(math.pi * _pulse.value)),
-                                  blurRadius: 40,
-                                  spreadRadius: 4,
-                                ),
-                              ],
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(colors: [
+                                Colors.white.withValues(alpha: .06 + .10 * math.sin(math.pi * _pulse.value)),
+                                Colors.white.withValues(alpha: 0),
+                              ]),
                             ),
                             child: child,
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(34),
+                          child: SizedBox.expand(
                             child: AnimatedBuilder(
                               animation: _sheen,
                               builder: (_, child) => ShaderMask(
@@ -267,7 +258,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 },
                                 child: child,
                               ),
-                              child: Image.asset('assets/images/splash_logo.png', fit: BoxFit.cover),
+                              // The logo cut out of its background, so it sits straight on the screen.
+                              child: Image.asset('assets/images/splash_logo_cut.png', fit: BoxFit.contain),
                             ),
                           ),
                         ),

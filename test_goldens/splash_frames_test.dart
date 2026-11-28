@@ -28,7 +28,7 @@ void main() {
     // Let the logo image decode.
     await tester.runAsync(() async {
       final el = tester.element(find.byType(Image).first);
-      await precacheImage(const AssetImage('assets/images/splash_logo.png'), el);
+      await precacheImage(const AssetImage('assets/images/splash_logo_cut.png'), el);
     });
     var now = 0;
     for (final ms in [250, 700, 1200, 1600, 2300, 3200]) {

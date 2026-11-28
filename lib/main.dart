@@ -1,3 +1,5 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,14 @@ Future<void> main() async {
   if (kReleaseMode) {
     ErrorWidget.builder = (details) => const SizedBox.shrink();
   }
+  // Print every error in full, in release builds too, so a log shows what broke.
+  FlutterError.onError = (details) {
+    debugPrint('GazaNow ERROR: ${details.exceptionAsString()}\n${details.stack}');
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('GazaNow UNCAUGHT: $error\n$stack');
+    return true;
+  };
   debugPrint('GazaNow: main() started');
   final prefs = await SharedPreferences.getInstance();
   final darkMode = ValueNotifier<bool>(prefs.getBool('dark') ?? false);
